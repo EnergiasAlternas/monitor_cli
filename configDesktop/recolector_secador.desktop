@@ -1,0 +1,18 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Recolector Secador
+Comment=Sistema de recoleccion secador
+
+# Ruta a tu script lanzador
+Exec=/home/alternas/Proyectos/monitor-cli/lanzador_recolector.sh
+
+# IMPORTANTE: Esto le dice a Ubuntu que abra una ventana negra (terminal)
+Terminal=true
+
+# Puedes usar un icono genérico o poner la ruta a una imagen .png tuya
+#Icon=utilities-terminal
+Icon=/home/alternas/Proyectos/monitor-cli/icons/recolector.png
+
+# Categoría (opcional)
+Categories=Utility;Application;
