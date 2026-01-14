@@ -1,4 +1,3 @@
-
 import time
 from rich.live import Live
 from rich.layout import Layout
@@ -18,6 +17,8 @@ MAX_MASA = 5000.0 # Ejemplo: 5kg max
 def make_bar(value, max_val, color="green"):
     """Crea una barra de progreso textual"""
     width = 20
+    # Evitar división por cero
+    if max_val == 0: max_val = 1
     percent = min(max(value / max_val, 0), 1)
     filled = int(width * percent)
     bar = "█" * filled + "░" * (width - filled)
@@ -43,7 +44,8 @@ def create_dashboard(data):
     table_env.add_column("Valor", justify="right")
     table_env.add_column("Gráfica", justify="left")
 
-    table_env.add_row("Temp 1", f"{data['temperatura1_C']} °C", make_bar(data['temperatura1_C'], MAX_TEMP, "red"))
+    # CAMBIO 1: La clave ahora es 'temp1_C' en lugar de 'temperatura1_C'
+    table_env.add_row("Temp 1", f"{data['temp1_C']} °C", make_bar(data['temp1_C'], MAX_TEMP, "red"))
     table_env.add_row("Hum 1", f"{data['humedad1_RH']} %", make_bar(data['humedad1_RH'], MAX_HUM, "blue"))
     table_env.add_row("Temp 2", f"{data['temperatura2_C']} °C", make_bar(data['temperatura2_C'], MAX_TEMP, "red"))
     table_env.add_row("Hum 2", f"{data['humedad2_RH']} %", make_bar(data['humedad2_RH'], MAX_HUM, "blue"))
@@ -54,19 +56,30 @@ def create_dashboard(data):
     table_proc.add_column("Variable", style="magenta")
     table_proc.add_column("Valor", justify="right")
     
-    table_proc.add_row("Termopar 1", f"{data['termopar1_C']} °C")
-    table_proc.add_row("Termopar 2", f"{data['termopar2_C']} °C")
+    # CAMBIO 2: Iterar sobre la lista de termopares en lugar de buscar claves fijas
+    termopares = data.get('termopares_C', [])
+    for i, temp_val in enumerate(termopares):
+        table_proc.add_row(f"Termopar {i+1}", f"{temp_val} °C")
+
     table_proc.add_row("MASA (Balanza)", f"[bold green]{data['masa_g']:.2f} g[/]")
 
     # Estado de Ventiladores
     fans = data['ventiladores']
-    fan_status = "  ".join([
-        f"[bold white on green] ON [/]" if f else "[bold white on red] OFF [/]" 
-        for f in fans
-    ])
+    
+    # Generar visualización para N ventiladores dinámicamente
+    fan_display_text = []
+    fan_status_icons = []
+    
+    for i, f in enumerate(fans):
+        status_text = f"[bold white on green] ON [/]" if f else "[bold white on red] OFF [/]" 
+        fan_display_text.append(f"V{i+1}: {str(f).upper()}")
+        fan_status_icons.append(status_text)
+        
+    fan_info_str = "   ".join(fan_display_text)
+    fan_status_str = "  ".join(fan_status_icons)
     
     panel_fans = Panel(
-        Align.center(f"V1: {fans[0]}   V2: {fans[1]}   V3: {fans[2]}\n\n{fan_status}"),
+        Align.center(f"{fan_info_str}\n\n{fan_status_str}"),
         title="Estado Ventiladores",
         border_style="green"
     )
@@ -77,7 +90,7 @@ def run_monitor():
     manager = SensorManager()
     manager.start()
     
-    console = Console()
+    # console = Console() # No es estrictamente necesario instanciarlo fuera, pero ok
     layout = generate_layout()
     
     layout["header"].update(Panel(Align.center("[bold gold1]SISTEMA DE MONITOREO SECADOR IOT[/]"), style="bold white"))

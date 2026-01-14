@@ -12,18 +12,18 @@ SERIAL_BAUD = 9600
 
 class SensorManager:
     def __init__(self):
+        # Se actualizaron las claves para coincidir con el nuevo JSON del MQTT
         self.data = {
             "timestamp_ms": 0,
-            "temperatura1_C": 0.0,
+            "temp1_C": 0.0,             # Antes temperatura1_C
             "humedad1_RH": 0.0,
             "temperatura2_C": 0.0,
             "humedad2_RH": 0.0,
             "radiacion_W_m2": 0.0,
-            "termopar1_C": 0.0,
-            "termopar2_C": 0.0,
+            "termopares_C": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], # Lista en lugar de variables sueltas
             "ventiladores": [False, False, False],
-            "masa_g": 0.0,      # Para las gráficas (numérico)
-            "masa_str": "0.00"  # Para el CSV (texto exacto)
+            "masa_g": 0.0,      # Mantenemos esto para el Serial (numérico)
+            "masa_str": "0.00"  # Mantenemos esto para el Serial (texto exacto)
         }
         self.running = True
         self.lock = threading.Lock()
@@ -32,6 +32,7 @@ class SensorManager:
         try:
             payload = json.loads(msg.payload.decode())
             with self.lock:
+                # Actualiza solo si la clave existe en nuestro diccionario de datos
                 for key, value in payload.items():
                     if key in self.data:
                         self.data[key] = value
@@ -57,7 +58,6 @@ class SensorManager:
                         raw_line = ser.readline().decode('utf-8', errors='ignore').strip()
                         if raw_line:
                             # Limpiamos solo la unidad 'g' o espacios, pero mantenemos el punto decimal
-                            # Ejemplo entrada: "0.557 g" -> "0.557"
                             val_str = raw_line.lower().replace('g', '').strip()
                             
                             with self.lock:
@@ -81,6 +81,7 @@ class SensorManager:
 
     def get_data(self):
         with self.lock:
+            # Devuelve una copia para evitar condiciones de carrera al leer
             return self.data.copy()
 
     def stop(self):
